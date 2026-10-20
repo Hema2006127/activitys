@@ -4,10 +4,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymapp/core/database/hive_setup.dart';
 import 'package:gymapp/core/providers/theme_provider.dart';
+import 'package:gymapp/core/services/home_widget_service.dart';
 import 'package:gymapp/core/services/notification_service.dart';
 import 'package:gymapp/core/theme/app_theme.dart';
+import 'package:gymapp/core/widgets/glass.dart';
 import 'package:gymapp/features/splash/splash_screen.dart';
 import 'package:gymapp/firebase_options.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,13 +18,20 @@ void main() async {
   // 1) تهيئة Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // تواريخ بالعربي (DateFormat(..., 'ar'))
+  await initializeDateFormatting('ar');
+
   // 2) تهيئة Hive
   await HiveSetup.init();
+
+  // Widget الشاشة الرئيسية (iOS)
+  await HomeWidgetService.init();
 
   // 3) الإشعارات
   await NotificationService.init();
   await NotificationService.scheduleDailyReminders();
   await NotificationService.scheduleEndOfDayReport();
+  await NotificationService.scheduleWeeklyReport();
 
   runApp(const ProviderScope(child: HabitTrackerApp()));
 }
@@ -39,6 +49,8 @@ class HabitTrackerApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       home: const SplashScreen(),
+      // خلفية الأورورا ثابتة ورا كل الشاشات (الـ Scaffold شفاف)
+      builder: (context, child) => AuroraBackground(child: child),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

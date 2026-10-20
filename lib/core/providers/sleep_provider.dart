@@ -50,4 +50,7 @@ class SleepNotifier extends Notifier<SleepLog> {
     box.add(newLog);
     state = newLog;
   }
+
+  /// تعيين قيمة مباشرة (مستخدمة في الاستيراد من Apple Health).
+  void setHours(double hours) => updateSleep(hours - state.hours);
 }

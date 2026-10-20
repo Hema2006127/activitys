@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
 
 class EmptyStateWidget extends StatelessWidget {
   final IconData icon;
@@ -44,7 +45,7 @@ class EmptyStateWidget extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).brightness == Brightness.dark
                     ? Colors.white
-                    : const Color(0xFF1A1A2E),
+                    : AppTheme.inkColor,
               ),
               textAlign: TextAlign.center,
             ),

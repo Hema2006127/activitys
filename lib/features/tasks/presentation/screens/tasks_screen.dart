@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
+import 'package:gymapp/core/widgets/animations.dart';
 import 'package:intl/intl.dart';
 import 'package:gymapp/core/providers/tasks_provider.dart';
 import 'package:gymapp/core/database/models.dart';
@@ -66,7 +69,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> with SingleTickerProv
             right: 20,
           ),
           decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            color: Theme.of(context).bottomSheetTheme.backgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -302,10 +305,17 @@ class _TasksScreenState extends ConsumerState<TasksScreen> with SingleTickerProv
                         itemCount: tasks.length,
                         itemBuilder: (context, index) {
                           final task = tasks[index];
-                          return _TaskCard(
-                            task: task,
-                            onToggle: () => ref.read(tasksProvider.notifier).toggleTask(task.id),
-                            onDelete: () => ref.read(tasksProvider.notifier).deleteTask(task.id),
+                          return FadeSlideIn(
+                            key: ValueKey(task.id),
+                            index: index,
+                            child: _TaskCard(
+                              task: task,
+                              onToggle: () {
+                                HapticFeedback.lightImpact();
+                                ref.read(tasksProvider.notifier).toggleTask(task.id);
+                              },
+                              onDelete: () => ref.read(tasksProvider.notifier).deleteTask(task.id),
+                            ),
                           );
                         },
                       ),
@@ -450,19 +460,27 @@ class _TaskCard extends StatelessWidget {
                 // Checkbox
                 GestureDetector(
                   onTap: onToggle,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: task.isCompleted ? Colors.green : Colors.transparent,
-                      border: Border.all(
-                        color: task.isCompleted ? Colors.green : Colors.grey,
-                        width: 2,
+                  // نطّة صغيرة لما المهمة تخلص
+                  child: TweenAnimationBuilder<double>(
+                    key: ValueKey(task.isCompleted),
+                    tween: Tween(begin: task.isCompleted ? 0.6 : 1.0, end: 1.0),
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.elasticOut,
+                    builder: (_, s, child) => Transform.scale(scale: s, child: child),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: task.isCompleted ? AppTheme.accentColor : Colors.transparent,
+                        border: Border.all(
+                          color: task.isCompleted ? AppTheme.accentColor : Colors.grey,
+                          width: 2,
+                        ),
                       ),
+                      child: task.isCompleted ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
                     ),
-                    child: task.isCompleted ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -471,14 +489,18 @@ class _TaskCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        task.title,
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 250),
                         style: TextStyle(
+                          fontFamily: DefaultTextStyle.of(context).style.fontFamily,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-                          color: task.isCompleted ? Colors.grey : Colors.white,
+                          color: task.isCompleted
+                              ? Colors.grey
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
+                        child: Text(task.title),
                       ),
                       if (task.note != null) ...[
                         const SizedBox(height: 2),

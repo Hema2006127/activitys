@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:gymapp/core/database/hive_setup.dart';
+import 'package:gymapp/core/services/ai_service.dart';
+import 'package:gymapp/core/services/weekly_report_service.dart';
 import 'package:gymapp/core/providers/gym_provider.dart';
 import 'package:gymapp/core/providers/tasks_provider.dart';
 import 'package:gymapp/core/providers/water_provider.dart';
@@ -12,8 +13,6 @@ import 'package:gymapp/core/providers/meals_provider.dart';
 import 'package:gymapp/core/providers/sleep_provider.dart';
 import 'package:gymapp/core/providers/workout_provider.dart';
 
-const String _groqApiKey = 'YOUR_API_KEY';
-const String _groqModel = 'llama-3.3-70b-versatile';
 const int _maxHistoryMessages = 20;
 
 class AiChatScreen extends ConsumerStatefulWidget {
@@ -46,6 +45,10 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     super.initState();
     _chatBox = Hive.box<String>(HiveSetup.chatBox);
     _loadHistory();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(weeklyReportUnreadProvider.notifier).set(false);
+      _scrollToBottom();
+    });
   }
 
   void _loadHistory() {
@@ -174,56 +177,53 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _scrollToBottom();
 
     try {
-      final response = await http.post(
-        Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
-        headers: {
-          'Authorization': 'Bearer $_groqApiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'model': _groqModel,
-          'messages': [
-            {'role': 'system', 'content': _buildSystemPrompt()},
-            ..._apiHistory.takeLast(_maxHistoryMessages),
-          ],
-          'max_tokens': 900,
-          'temperature': 0.55,
-        }),
-      );
+      final reply = await AiService.complete([
+        {'role': 'system', 'content': _buildSystemPrompt()},
+        ..._apiHistory.takeLast(_maxHistoryMessages),
+      ]);
+      _apiHistory.add({'role': 'assistant', 'content': reply});
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final reply = data['choices'][0]['message']['content'] as String;
-        _apiHistory.add({'role': 'assistant', 'content': reply});
-
-        final aiMsg = _ChatMsg(text: reply, isUser: false);
-        _saveMessage(aiMsg);
-        setState(() {
-          _messages.add(aiMsg);
-          _isLoading = false;
-        });
-      } else {
-        final error = jsonDecode(response.body);
-        _apiHistory.removeLast();
-        setState(() {
-          _messages.add(_ChatMsg(
-            text: "⚠️ خطأ: ${error['error']['message'] ?? response.statusCode}",
-            isUser: false,
-          ));
-          _isLoading = false;
-        });
-      }
+      final aiMsg = _ChatMsg(text: reply, isUser: false);
+      _saveMessage(aiMsg);
+      if (!mounted) return;
+      setState(() {
+        _messages.add(aiMsg);
+        _isLoading = false;
+      });
     } catch (e) {
       _apiHistory.removeLast();
+      if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMsg(
-          text: "⚠️ تعذّر الاتصال. تأكد من اتصالك بالإنترنت.",
-          isUser: false,
-        ));
+        _messages.add(_ChatMsg(text: '⚠️ $e', isUser: false));
         _isLoading = false;
       });
     }
 
+    _scrollToBottom();
+  }
+
+  /// توليد التقرير الأسبوعي يدوياً من زرار الشات.
+  Future<void> _requestWeeklyReport() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    _scrollToBottom();
+    try {
+      final report = await WeeklyReportService.generate(ref);
+      _apiHistory.add({'role': 'assistant', 'content': report});
+      final aiMsg = _ChatMsg(text: report, isUser: false);
+      _saveMessage(aiMsg);
+      if (!mounted) return;
+      setState(() {
+        _messages.add(aiMsg);
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(_ChatMsg(text: '⚠️ $e', isUser: false));
+        _isLoading = false;
+      });
+    }
     _scrollToBottom();
   }
 
@@ -236,6 +236,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         title: const Text('AI Coach 🧠'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.insights_rounded),
+            tooltip: 'تقرير الأسبوع',
+            onPressed: _isLoading ? null : _requestWeeklyReport,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: 'مسح المحادثة',
@@ -285,8 +290,12 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(2, 2))],
                     ),
                     child: Text(
-                      msg.text,
-                      style: TextStyle(color: msg.isUser ? Colors.black : Colors.white, fontSize: 15, height: 1.5),
+                      msg.text.replaceAll('**', ''),
+                      style: TextStyle(
+                        color: msg.isUser ? Colors.white : theme.colorScheme.onSurface,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                 );
@@ -333,7 +342,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     backgroundColor: theme.primaryColor,
                     child: IconButton(
                       icon: const Icon(Icons.send_rounded),
-                      color: Colors.black,
+                      color: Colors.white,
                       onPressed: _isLoading ? null : _sendMessage,
                     ),
                   ),

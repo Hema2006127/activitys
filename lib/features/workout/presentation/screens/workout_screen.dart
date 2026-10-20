@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gymapp/core/providers/rest_timer_provider.dart';
 import 'package:gymapp/core/providers/workout_provider.dart';
+import 'package:gymapp/features/workout/presentation/widgets/rest_timer_bar.dart';
 
 class WorkoutScreen extends ConsumerStatefulWidget {
   final DateTime date;
@@ -44,6 +46,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         .toList();
 
     return Scaffold(
+      bottomNavigationBar: const RestTimerBar(),
       appBar: AppBar(
         title: Text(
           'Workout: ${widget.date.day}/${widget.date.month}/${widget.date.year}',
@@ -164,6 +167,16 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                   w,
                                 );
                             _weightController.clear();
+                            // ابدأ عداد الراحة تلقائياً بعد كل set
+                            final setNo = sets
+                                    .where((s) =>
+                                        s.muscleGroup == _selectedGroup &&
+                                        s.musclePart == _selectedPart)
+                                    .length +
+                                1;
+                            ref.read(restTimerProvider.notifier).start(
+                                  label: '$_selectedGroup • $_selectedPart • Set $setNo',
+                                );
                           },
                           icon: const Icon(Icons.add),
                           label: const Text('Add Set'),

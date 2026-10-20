@@ -59,5 +59,6 @@ class HiveSetup {
     s.delete('user_name');
     s.delete('water_goal');
     s.delete('gym_days_goal');
+    s.delete('sleep_started_at');
   }
 }

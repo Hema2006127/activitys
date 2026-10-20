@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -143,7 +144,7 @@ class _ProgressPhotosScreenState extends State<ProgressPhotosScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF00E5FF)),
+              leading: const Icon(Icons.camera_alt, color: AppTheme.secondaryColor),
               title: const Text('التقط صورة جديدة'),
               onTap: () {
                 Navigator.pop(context);
@@ -151,7 +152,7 @@ class _ProgressPhotosScreenState extends State<ProgressPhotosScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF00FFA3)),
+              leading: const Icon(Icons.photo_library, color: AppTheme.accentColor),
               title: const Text('اختر من المعرض'),
               onTap: () {
                 Navigator.pop(context);
@@ -204,7 +205,7 @@ class _ProgressPhotosScreenState extends State<ProgressPhotosScreen> {
               icon: Icons.photo_camera_outlined,
               title: 'لسه ماضفتش صور',
               subtitle: 'التقط صورة كل أسبوع وشوف الفرق\nالتحول بيبان بالصور!',
-              color: Color(0xFF00E5FF),
+              color: AppTheme.secondaryColor,
             )
           : Padding(
               padding: const EdgeInsets.all(12),
@@ -293,9 +294,9 @@ class _PhotoCard extends StatelessWidget {
             // Selection indicator
             if (isSelected)
               Container(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                color: AppTheme.secondaryColor.withValues(alpha: 0.35),
                 child: const Center(
-                  child: Icon(Icons.check_circle, color: Color(0xFF00E5FF), size: 40),
+                  child: Icon(Icons.check_circle, color: AppTheme.secondaryColor, size: 40),
                 ),
               ),
           ],
@@ -361,7 +362,7 @@ class _CompareScreen extends StatelessWidget {
             child: Text(
               'الفارق: ${later.date.difference(earlier.date).inDays} يوم',
               style: const TextStyle(
-                  color: Color(0xFF00E5FF),
+                  color: AppTheme.secondaryColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold),
             ),
@@ -398,7 +399,7 @@ class _ComparePanel extends StatelessWidget {
                 children: [
                   Text(label,
                       style: const TextStyle(
-                          color: Color(0xFF00E5FF),
+                          color: AppTheme.secondaryColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 14)),
                   Text(

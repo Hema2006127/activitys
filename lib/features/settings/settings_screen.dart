@@ -1,10 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymapp/core/database/hive_setup.dart';
 import 'package:gymapp/core/providers/theme_provider.dart';
 import 'package:gymapp/core/providers/water_provider.dart';
 import 'package:gymapp/core/services/auth_service.dart';
+import 'package:gymapp/core/services/health_service.dart';
+import 'package:gymapp/core/services/smart_reminders.dart';
+import 'package:gymapp/core/services/task_reminders.dart';
+import 'package:gymapp/core/providers/tasks_provider.dart';
 import 'package:gymapp/features/auth/login_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -198,7 +203,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       const Icon(
                         Icons.fitness_center,
-                        color: Color(0xFF00E5FF),
+                        color: AppTheme.secondaryColor,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -210,7 +215,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Text(
                         '$_gymDaysGoal أيام',
                         style: const TextStyle(
-                          color: Color(0xFF00E5FF),
+                          color: AppTheme.secondaryColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -221,7 +226,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     min: 1,
                     max: 7,
                     divisions: 6,
-                    activeColor: const Color(0xFF00E5FF),
+                    activeColor: AppTheme.secondaryColor,
                     onChanged: (v) => setState(() => _gymDaysGoal = v.round()),
                   ),
                 ],
@@ -245,6 +250,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── الربط والتذكيرات ─────────────────────────────────────────────
+          _SectionHeader(label: 'الربط والتذكيرات'),
+          if (HealthService.supported)
+            Card(
+              child: SwitchListTile(
+                secondary: const Icon(Icons.favorite_rounded, color: Color(0xFFFF375F)),
+                title: const Text('Apple Health'),
+                subtitle: const Text('سحب الخطوات والنوم والوزن تلقائياً'),
+                value: HealthService.enabled,
+                onChanged: (v) async {
+                  if (v) {
+                    await HealthService.connect(ref);
+                  } else {
+                    HealthService.disconnect(ref);
+                  }
+                  if (mounted) setState(() {});
+                },
+              ),
+            ),
+          Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.water_drop_rounded, color: AppTheme.secondaryColor),
+              title: const Text('تذكيرات المياه الذكية'),
+              subtitle: const Text('بنفكرك بس لو إنت متأخر عن هدفك'),
+              value: SmartReminders.enabled,
+              onChanged: (v) async {
+                final w = ref.read(waterProvider);
+                await SmartReminders.setEnabled(v, amount: w.amount, goal: w.goal);
+                if (mounted) setState(() {});
+              },
+            ),
+          ),
+
+          Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.checklist_rounded, color: AppTheme.primaryColor),
+              title: const Text('تذكيرات المهام'),
+              subtitle: const Text('ملخص الصبح + تذكير بكل مهمة باسمها'),
+              value: TaskReminders.enabled,
+              onChanged: (v) async {
+                await TaskReminders.setEnabled(v, ref.read(tasksProvider));
+                if (mounted) setState(() {});
+              },
             ),
           ),
 

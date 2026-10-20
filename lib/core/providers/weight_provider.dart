@@ -16,9 +16,9 @@ class WeightNotifier extends Notifier<List<WeightLog>> {
     return box.values.toList()..sort((a, b) => a.date.compareTo(b.date));
   }
 
-  void addWeight(double weight) {
+  void addWeight(double weight, {DateTime? date}) {
     final box = Hive.box<WeightLog>(HiveSetup.weightBox);
-    final log = WeightLog(date: DateTime.now(), weight: weight);
+    final log = WeightLog(date: date ?? DateTime.now(), weight: weight);
     box.add(log);
     
     final newState = [...state, log];

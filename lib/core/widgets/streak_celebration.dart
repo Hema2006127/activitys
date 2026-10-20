@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
 
 class StreakCelebrationOverlay extends StatefulWidget {
   final int streak;
@@ -97,8 +98,11 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
                   margin: const EdgeInsets.all(32),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryColor.withValues(alpha: 0.35),
+                        AppTheme.bgMid.withValues(alpha: 0.85),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),

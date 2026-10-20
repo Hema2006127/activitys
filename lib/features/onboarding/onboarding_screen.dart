@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
+import 'package:gymapp/core/widgets/glass.dart';
 import 'package:gymapp/core/database/hive_setup.dart';
 import 'package:gymapp/features/settings/settings_screen.dart';
 import 'package:gymapp/main_screen.dart';
@@ -73,15 +75,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0D0D), Color(0xFF1A1A2E), Color(0xFF16213E)],
-          ),
-        ),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+      body: AuroraBackground(
+        animated: true,
         child: SafeArea(
           child: Column(
             children: [
@@ -130,25 +128,49 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               // Bottom button
               Padding(
                 padding: const EdgeInsets.fromLTRB(32, 16, 32, 36),
-                child: SizedBox(
+                child: Container(
                   width: double.infinity,
                   height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.brandGradient,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00E5FF),
-                      foregroundColor: Colors.black,
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                      elevation: 0,
                     ),
                     onPressed: _nextPage,
-                    child: Text(
-                      _currentPage < 2 ? 'التالي' : 'ابدأ الرحلة!',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentPage < 2 ? 'التالي' : 'ابدأ الرحلة!',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          _currentPage < 2
+                              ? Icons.arrow_forward_rounded
+                              : Icons.rocket_launch_rounded,
+                          size: 20,
+                          textDirection: Directionality.of(context),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -156,6 +178,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -175,26 +198,7 @@ class _WelcomePage extends StatelessWidget {
         children: [
           ScaleTransition(
             scale: iconScale,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFF6C63FF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.fitness_center, size: 60, color: Colors.white),
-            ),
+            child: const AppLogo(size: 120),
           ),
           const SizedBox(height: 40),
           const Text(
@@ -263,7 +267,7 @@ class _NamePage extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
+                borderSide: const BorderSide(color: AppTheme.secondaryColor, width: 1.5),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             ),
@@ -333,7 +337,7 @@ class _GoalsPage extends StatelessWidget {
           // Gym days goal
           _GoalTile(
             icon: Icons.fitness_center,
-            color: const Color(0xFF00E5FF),
+            color: AppTheme.secondaryColor,
             label: 'أيام الجيم في الأسبوع',
             value: '$gymDaysGoal أيام',
             child: Slider(
@@ -341,7 +345,7 @@ class _GoalsPage extends StatelessWidget {
               min: 1,
               max: 7,
               divisions: 6,
-              activeColor: const Color(0xFF00E5FF),
+              activeColor: AppTheme.secondaryColor,
               onChanged: (v) => onGymDaysChanged(v.round()),
             ),
           ),
@@ -368,13 +372,9 @@ class _GoalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
+      borderRadius: BorderRadius.circular(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -409,7 +409,7 @@ class _Dot extends StatelessWidget {
       width: active ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF00E5FF) : Colors.white24,
+        color: active ? AppTheme.secondaryColor : Colors.white24,
         borderRadius: BorderRadius.circular(4),
       ),
     );

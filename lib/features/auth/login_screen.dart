@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
+import 'package:gymapp/core/widgets/glass.dart';
 import 'package:flutter/services.dart';
 import 'package:gymapp/core/services/auth_service.dart';
 import 'package:gymapp/main_screen.dart';
@@ -126,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg, textAlign: TextAlign.center),
-        backgroundColor: const Color(0xFFE53935),
+        backgroundColor: AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(20),
@@ -138,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg, textAlign: TextAlign.center),
-        backgroundColor: const Color(0xFF00C853),
+        backgroundColor: AppTheme.accentColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(20),
@@ -152,19 +154,13 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF0D0D0D), Color(0xFF1A1A2E), Color(0xFF16213E)],
-            ),
-          ),
+        body: AuroraBackground(
+          animated: true,
           child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -202,6 +198,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -209,30 +206,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLogo() {
     return Column(
       children: [
-        Container(
-          width: 90,
-          height: 90,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6C63FF), Color(0xFF3ECFCF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
-                blurRadius: 30,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.fitness_center_rounded,
-            size: 46,
-            color: Colors.white,
-          ),
-        ),
+        const AppLogo(size: 90),
         const SizedBox(height: 14),
         const Text(
           'عاداتي',
@@ -246,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen>
         const SizedBox(height: 4),
         ShaderMask(
           shaderCallback: (b) => const LinearGradient(
-            colors: [Color(0xFF6C63FF), Color(0xFF3ECFCF)],
+            colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
           ).createShader(b),
           child: Text(
             _isLogin ? 'أهلاً بعودتك 👋' : 'انضم إلينا الآن 🚀',
@@ -259,20 +233,9 @@ class _LoginScreenState extends State<LoginScreen>
 
   // ===== Form Card =====
   Widget _buildCard() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      borderRadius: BorderRadius.circular(28),
       child: Form(
         key: _formKey,
         child: Column(
@@ -352,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   child: const Text(
                     'نسيت كلمة المرور؟',
-                    style: TextStyle(color: Color(0xFF6C63FF), fontSize: 13),
+                    style: TextStyle(color: AppTheme.primaryColor, fontSize: 13),
                   ),
                 ),
               ),
@@ -367,7 +330,7 @@ class _LoginScreenState extends State<LoginScreen>
               child: ElevatedButton(
                 onPressed: _loading ? null : _submitEmail,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6C63FF),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -418,7 +381,7 @@ class _LoginScreenState extends State<LoginScreen>
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54, fontSize: 14),
-        prefixIcon: Icon(icon, color: const Color(0xFF6C63FF), size: 20),
+        prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.07),
@@ -432,13 +395,13 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 1.5),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE53935)),
+          borderSide: const BorderSide(color: AppTheme.errorColor),
         ),
-        errorStyle: const TextStyle(color: Color(0xFFE57373), fontSize: 12),
+        errorStyle: const TextStyle(color: AppTheme.errorColor, fontSize: 12),
         contentPadding: const EdgeInsets.symmetric(
           vertical: 14,
           horizontal: 14,
@@ -524,7 +487,7 @@ class _LoginScreenState extends State<LoginScreen>
           onTap: _toggleMode,
           child: ShaderMask(
             shaderCallback: (b) => const LinearGradient(
-              colors: [Color(0xFF6C63FF), Color(0xFF3ECFCF)],
+              colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
             ).createShader(b),
             child: Text(
               _isLogin ? 'أنشئ حساباً' : 'سجّل دخول',

@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymapp/core/providers/water_provider.dart';
+import 'package:gymapp/core/theme/app_theme.dart';
 
 class WaterScreen extends ConsumerStatefulWidget {
   const WaterScreen({super.key});
@@ -51,15 +52,21 @@ class _WaterScreenState extends ConsumerState<WaterScreen>
                 alignment: Alignment.center,
                 children: [
                   // Wave fill
+                  // المية بتطلع تدريجياً لما تضيف كوباية
                   ClipOval(
-                    child: AnimatedBuilder(
-                      animation: _waveController,
-                      builder: (_, _) => CustomPaint(
-                        painter: _WavePainter(
-                          fillPercent: percentage,
-                          phase: _waveController.value * 2 * pi,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(end: percentage),
+                      duration: const Duration(milliseconds: 900),
+                      curve: Curves.easeOutCubic,
+                      builder: (_, fill, _) => AnimatedBuilder(
+                        animation: _waveController,
+                        builder: (_, _) => CustomPaint(
+                          painter: _WavePainter(
+                            fillPercent: fill,
+                            phase: _waveController.value * 2 * pi,
+                          ),
+                          size: const Size(240, 240),
                         ),
-                        size: const Size(240, 240),
                       ),
                     ),
                   ),
@@ -117,10 +124,19 @@ class _WaterScreenState extends ConsumerState<WaterScreen>
               alignment: WrapAlignment.center,
               spacing: 6,
               runSpacing: 4,
-              children: List.generate(goalCups, (i) => Icon(
-                i < cups ? Icons.water_drop : Icons.water_drop_outlined,
-                color: i < cups ? Colors.blue : Colors.white24,
-                size: 24,
+              children: List.generate(goalCups, (i) => AnimatedScale(
+                scale: i < cups ? 1.0 : 0.8,
+                duration: Duration(milliseconds: 300 + i * 40),
+                curve: Curves.easeOutBack,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: Icon(
+                    i < cups ? Icons.water_drop : Icons.water_drop_outlined,
+                    key: ValueKey(i < cups),
+                    color: i < cups ? AppTheme.secondaryColor : Colors.white24,
+                    size: 24,
+                  ),
+                ),
               )),
             ),
           ),
