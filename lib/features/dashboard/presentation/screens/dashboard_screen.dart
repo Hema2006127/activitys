@@ -1,16 +1,16 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymapp/core/database/hive_setup.dart';
 import 'package:gymapp/core/navigation.dart';
 import 'package:gymapp/core/providers/gym_provider.dart';
+import 'package:gymapp/core/providers/meals_provider.dart';
+import 'package:gymapp/core/providers/sleep_provider.dart';
 import 'package:gymapp/core/providers/tab_provider.dart';
 import 'package:gymapp/core/providers/tasks_provider.dart';
 import 'package:gymapp/core/providers/water_provider.dart';
 import 'package:gymapp/core/providers/weight_provider.dart';
-import 'package:gymapp/core/providers/meals_provider.dart';
-import 'package:gymapp/core/providers/sleep_provider.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:gymapp/core/theme/app_theme.dart';
 import 'package:gymapp/core/services/habit_history.dart';
 import 'package:gymapp/core/services/health_service.dart';
@@ -19,6 +19,7 @@ import 'package:gymapp/core/widgets/glass.dart';
 import 'package:gymapp/core/widgets/habit_heatmap.dart';
 import 'package:intl/intl.dart';
 import 'package:gymapp/features/sleep/sleep_tracker.dart';
+import 'package:gymapp/features/tools/fitness_tools_screen.dart';
 import 'package:gymapp/features/weight/presentation/screens/weight_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -72,6 +73,24 @@ class DashboardScreen extends ConsumerWidget {
           tooltip: 'القائمة',
           onPressed: openMainDrawer,
         ),
+        actions: [
+          IconButton(
+            tooltip: 'أدوات وحاسبات اللياقة',
+            icon: const Icon(Icons.calculate_outlined, color: Color(0xFF00E5FF)),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FitnessToolsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'مشاركة إنجاز اليوم',
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () => _shareTodayProgress(context, gymStreak, waterLog, taskPct),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
@@ -154,6 +173,34 @@ class DashboardScreen extends ConsumerWidget {
 
             const SizedBox(height: 20),
             const FadeSlideIn(index: 10, child: HabitHeatmap()),
+            const SizedBox(height: 16),
+            FadeSlideIn(
+              index: 11,
+              child: GlassContainer(
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.speed, color: Color(0xFF00E5FF), size: 24),
+                  ),
+                  title: const Text('أدوات وحاسبات اللياقة ⚡',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  subtitle: const Text('حاسبة BMI، السعرات TDEE، مؤقت الراحة',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FitnessToolsScreen()),
+                    );
+                  },
+                ),
+              ),
+            ),
 
             const SizedBox(height: 28),
             const Text('تقدم الوزن',
@@ -225,6 +272,38 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _shareTodayProgress(
+    BuildContext context,
+    int streak,
+    dynamic waterLog,
+    double taskPct,
+  ) {
+    HapticFeedback.mediumImpact();
+    final waterDonePct =
+        waterLog.goal > 0 ? (waterLog.amount / waterLog.goal * 100).toInt() : 0;
+    final text = '💪 إنجازي اليوم في تطبيق "عاداتي":\n'
+        '🔥 سلسلة الجيم: $streak أيام\n'
+        '💧 شرب المياه: ${waterLog.amount} مل ($waterDonePct%)\n'
+        '✅ إنجاز المهام: ${(taskPct * 100).toInt()}%\n'
+        '⚡ خطوة بخطوة نحو الهدف!';
+
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(child: Text('تم نسخ ملخص إنجاز اليوم للحافظة! جاهز للمشاركة 🚀')),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -616,6 +695,66 @@ class _DayScoreCard extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Daily Motivation Banner ───────────────────────────────────────────────────
+class _DailyMotivationBanner extends StatelessWidget {
+  const _DailyMotivationBanner();
+
+  static const _quotes = [
+    'الالتزام اليوم هو قوة الغد. لا تتوقف أبداً! 💪',
+    'أصعب خطوة هي الذهاب إلى التمرين، والباقي مجرد إنجاز. 🏋️',
+    'جسمك يستحق أن تعتني به، حافظ على عاداتك وصحتك. 💧',
+    'النتائج لا تأتي بين ليلة وضحاها، استمر حتى تصبح عادة! 🔥',
+    'تمرين اليوم أفضل من تأجيل الغد. كل يوم هو بداية جديدة! ⚡',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final dayIndex = DateTime.now().day % _quotes.length;
+    final quote = _quotes[dayIndex];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF6C63FF).withValues(alpha: 0.18),
+            const Color(0xFF00E5FF).withValues(alpha: 0.1),
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        border: Border.all(
+          color: const Color(0xFF6C63FF).withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6C63FF).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.bolt, color: Color(0xFF00E5FF), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              quote,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
             ),
           ),
         ],

@@ -32,11 +32,14 @@ import 'package:gymapp/features/reports/presentation/screens/reports_screen.dart
 import 'package:gymapp/features/settings/settings_screen.dart';
 import 'package:gymapp/features/sleep/sleep_tracker.dart';
 import 'package:gymapp/features/tasks/presentation/screens/tasks_screen.dart';
+import 'package:gymapp/features/tools/fitness_tools_screen.dart';
 import 'package:gymapp/features/water/presentation/screens/water_screen.dart';
 import 'package:gymapp/features/weight/presentation/screens/weight_screen.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
+
+  static GlobalKey<ScaffoldState> get scaffoldKey => mainScaffoldKey;
 
   @override
   ConsumerState<MainScreen> createState() => _MainScreenState();
@@ -115,33 +118,37 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   Future<void> _handleUserSwitch() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
 
-    final storedUid = HiveSetup.getSetting('current_uid') ?? '';
+      final storedUid = HiveSetup.getSetting('current_uid') ?? '';
 
-    if (storedUid.isNotEmpty && storedUid != user.uid) {
-      // مستخدم مختلف — امسح كل البيانات القديمة
-      await HiveSetup.clearUserData();
-      // أعد تحميل كل الـ providers من Hive الفاضي
-      ref.invalidate(gymProvider);
-      ref.invalidate(waterProvider);
-      ref.invalidate(tasksProvider);
-      ref.invalidate(weightProvider);
-      ref.invalidate(mealsProvider);
-      ref.invalidate(sleepProvider);
-      ref.invalidate(workoutProvider);
-    }
+      if (storedUid.isNotEmpty && storedUid != user.uid) {
+        // مستخدم مختلف — امسح كل البيانات القديمة
+        await HiveSetup.clearUserData();
+        // أعد تحميل كل الـ providers من Hive الفاضي
+        ref.invalidate(gymProvider);
+        ref.invalidate(waterProvider);
+        ref.invalidate(tasksProvider);
+        ref.invalidate(weightProvider);
+        ref.invalidate(mealsProvider);
+        ref.invalidate(sleepProvider);
+        ref.invalidate(workoutProvider);
+      }
 
-    // احفظ الـ UID الحالي
-    HiveSetup.setSetting('current_uid', user.uid);
+      // احفظ الـ UID الحالي
+      HiveSetup.setSetting('current_uid', user.uid);
 
-    // اضبط الاسم من Firebase لو مش متسجل
-    final storedName = HiveSetup.getSetting('user_name') ?? '';
-    if (storedName.isEmpty) {
-      final name = user.displayName ??
-          (user.email?.split('@').first ?? '');
-      if (name.isNotEmpty) HiveSetup.setSetting('user_name', name);
+      // اضبط الاسم من Firebase لو مش متسجل
+      final storedName = HiveSetup.getSetting('user_name') ?? '';
+      if (storedName.isEmpty) {
+        final name = user.displayName ??
+            (user.email?.split('@').first ?? '');
+        if (name.isNotEmpty) HiveSetup.setSetting('user_name', name);
+      }
+    } catch (e) {
+      debugPrint('_handleUserSwitch error: $e');
     }
   }
 
@@ -377,6 +384,17 @@ class _AppDrawer extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const ProgressPhotosScreen()),
+                  );
+                },
+              ),
+              _DrawerTile(
+                icon: Icons.calculate_outlined,
+                title: 'أدوات وحاسبات اللياقة ⚡',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FitnessToolsScreen()),
                   );
                 },
               ),

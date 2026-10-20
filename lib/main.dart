@@ -16,22 +16,34 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 1) تهيئة Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase init error: $e');
+  }
 
   // تواريخ بالعربي (DateFormat(..., 'ar'))
   await initializeDateFormatting('ar');
 
   // 2) تهيئة Hive
-  await HiveSetup.init();
+  try {
+    await HiveSetup.init();
+  } catch (e) {
+    debugPrint('Hive init error: $e');
+  }
 
   // Widget الشاشة الرئيسية (iOS)
   await HomeWidgetService.init();
 
   // 3) الإشعارات
-  await NotificationService.init();
-  await NotificationService.scheduleDailyReminders();
-  await NotificationService.scheduleEndOfDayReport();
-  await NotificationService.scheduleWeeklyReport();
+  try {
+    await NotificationService.init();
+    await NotificationService.scheduleDailyReminders();
+    await NotificationService.scheduleEndOfDayReport();
+    await NotificationService.scheduleWeeklyReport();
+  } catch (e) {
+    debugPrint('Notification init error: $e');
+  }
 
   runApp(const ProviderScope(child: HabitTrackerApp()));
 }

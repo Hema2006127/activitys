@@ -98,19 +98,29 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted || _navigated) return;
     _navigated = true;
 
-    final user = FirebaseAuth.instance.currentUser;
-    Widget destination;
+    User? user;
+    try {
+      user = FirebaseAuth.instance.currentUser;
+    } catch (e) {
+      debugPrint('FirebaseAuth check error: $e');
+    }
 
+    Widget destination;
     if (user != null) {
-      // المستخدم مسجّل دخوله بالفعل
       destination = const MainScreen();
     } else {
-      final onboardingDone = HiveSetup.getSetting('onboarding_done') == 'true';
+      bool onboardingDone = false;
+      try {
+        onboardingDone = HiveSetup.getSetting('onboarding_done') == 'true';
+      } catch (e) {
+        debugPrint('Hive getSetting error: $e');
+      }
       destination = onboardingDone
           ? const LoginScreen()
           : const OnboardingScreen();
     }
 
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 600),

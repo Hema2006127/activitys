@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymapp/core/providers/rest_timer_provider.dart';
 import 'package:gymapp/core/providers/workout_provider.dart';
+import 'package:gymapp/features/tools/fitness_tools_screen.dart';
 import 'package:gymapp/features/workout/presentation/widgets/rest_timer_bar.dart';
 
 class WorkoutScreen extends ConsumerStatefulWidget {
@@ -49,8 +51,23 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       bottomNavigationBar: const RestTimerBar(),
       appBar: AppBar(
         title: Text(
-          'Workout: ${widget.date.day}/${widget.date.month}/${widget.date.year}',
+          'تمرين: ${widget.date.day}/${widget.date.month}/${widget.date.year}',
         ),
+        actions: [
+          IconButton(
+            tooltip: 'مؤقت الراحة بين المجموعات',
+            icon: const Icon(Icons.timer_outlined, color: Color(0xFF00E5FF)),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FitnessToolsScreen(initialTab: 2),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -158,6 +175,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           onPressed: () {
                             final w =
                                 double.tryParse(_weightController.text) ?? 0.0;
+                            HapticFeedback.mediumImpact();
                             ref
                                 .read(workoutProvider.notifier)
                                 .addSet(

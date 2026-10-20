@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -15,29 +16,41 @@ class NotificationService {
   static const weeklyReportId = 500;
 
   static Future<void> init() async {
-    tz.initializeTimeZones();
+    try {
+      tz.initializeTimeZones();
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    // الصلاحيات على iOS بتتطلب في أول فتح
-    const darwinSettings = DarwinInitializationSettings();
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: darwinSettings,
-    );
+      const androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const darwinSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: darwinSettings,
+      );
 
-    await _plugin.initialize(
-      settings: initSettings,
-      onDidReceiveNotificationResponse: (r) => _taps.add(r.payload),
-    );
+      await _plugin.initialize(
+        settings: initSettings,
+        onDidReceiveNotificationResponse: (r) => _taps.add(r.payload),
+      );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
 
-    for (final id in _legacyWaterIds) {
-      await _plugin.cancel(id: id);
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+
+      for (final id in _legacyWaterIds) {
+        await _plugin.cancel(id: id);
+      }
+    } catch (e) {
+      debugPrint('NotificationService.init error: $e');
     }
   }
 
@@ -47,10 +60,15 @@ class NotificationService {
 
   /// لو التطبيق اتفتح من إشعار وهو مقفول خالص.
   static Future<String?> launchPayload() async {
-    final details = await _plugin.getNotificationAppLaunchDetails();
-    return details?.didNotificationLaunchApp == true
-        ? details?.notificationResponse?.payload
-        : null;
+    try {
+      final details = await _plugin.getNotificationAppLaunchDetails();
+      return details?.didNotificationLaunchApp == true
+          ? details?.notificationResponse?.payload
+          : null;
+    } catch (e) {
+      debugPrint('NotificationService.launchPayload error: $e');
+      return null;
+    }
   }
 
   static NotificationDetails _details({
@@ -90,12 +108,16 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    await _plugin.show(
-      id: id,
-      title: title,
-      body: body,
-      notificationDetails: _details(),
-    );
+    try {
+      await _plugin.show(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: _details(),
+      );
+    } catch (e) {
+      debugPrint('NotificationService.showNotification error: $e');
+    }
   }
 
   /// إشعار مرة واحدة في وقت محدد.
@@ -110,33 +132,45 @@ class NotificationService {
     bool timeSensitive = false,
     String? payload,
   }) async {
-    if (when.isBefore(DateTime.now())) return;
-    await _plugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: _at(when),
-      notificationDetails: _details(
-        channelId: channelId,
-        channelName: channelName,
-        thread: thread,
-        timeSensitive: timeSensitive,
-        bigText: body.contains('\n') ? body : null,
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: payload,
-    );
+    try {
+      if (when.isBefore(DateTime.now())) return;
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: _at(when),
+        notificationDetails: _details(
+          channelId: channelId,
+          channelName: channelName,
+          thread: thread,
+          timeSensitive: timeSensitive,
+          bigText: body.contains('\n') ? body : null,
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('NotificationService.scheduleAt error ($id): $e');
+    }
   }
 
   // --- Cancel a single notification ---
   static Future<void> cancelNotification(int id) async {
-    await _plugin.cancel(id: id);
+    try {
+      await _plugin.cancel(id: id);
+    } catch (e) {
+      debugPrint('NotificationService.cancelNotification error ($id): $e');
+    }
   }
 
   // --- Cancel all reminders ---
   static Future<void> cancelIncompleteReminders() async {
-    for (final id in _dailyIds) {
-      await _plugin.cancel(id: id);
+    try {
+      for (final id in _dailyIds) {
+        await _plugin.cancel(id: id);
+      }
+    } catch (e) {
+      debugPrint('NotificationService.cancelIncompleteReminders error: $e');
     }
   }
 
@@ -149,50 +183,66 @@ class NotificationService {
     int minute, {
     int? weekday,
   }) async {
-    final now = DateTime.now();
-    var next = DateTime(now.year, now.month, now.day, hour, minute);
-    while (next.isBefore(now) || (weekday != null && next.weekday != weekday)) {
-      next = next.add(const Duration(days: 1));
-    }
+    try {
+      final now = DateTime.now();
+      var next = DateTime(now.year, now.month, now.day, hour, minute);
+      while (next.isBefore(now) || (weekday != null && next.weekday != weekday)) {
+        next = next.add(const Duration(days: 1));
+      }
 
-    await _plugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: _at(next),
-      notificationDetails: _details(),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: weekday == null
-          ? DateTimeComponents.time
-          : DateTimeComponents.dayOfWeekAndTime,
-    );
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: _at(next),
+        notificationDetails: _details(),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: weekday == null
+            ? DateTimeComponents.time
+            : DateTimeComponents.dayOfWeekAndTime,
+      );
+    } catch (e) {
+      debugPrint('NotificationService._scheduleRepeating error ($id): $e');
+    }
   }
 
   // --- Daily reminders ---
   // المياه → SmartReminders، المهام (بأسمائها) → TaskReminders
   static Future<void> scheduleDailyReminders() async {
-    await _plugin.cancel(id: 104); // كان تذكير مهام عام، اتبدّل بتذكيرات بأسماء المهام
-    await _scheduleRepeating(103, 'روحت الجيم النهارده؟ 🏋️',
-        'متكسرش السلسلة بتاعتك، سجّل تمرينك.', 16, 0);
-    await _scheduleRepeating(105, 'آخر فرصة 🌙',
-        'سجّل عاداتك النهارده عشان نتيجة يومك تتحسب صح.', 21, 0);
+    try {
+      await _plugin.cancel(id: 104); // كان تذكير مهام عام، اتبدّل بتذكيرات بأسماء المهام
+      await _scheduleRepeating(103, 'روحت الجيم النهارده؟ 🏋️',
+          'متكسرش السلسلة بتاعتك، سجّل تمرينك.', 16, 0);
+      await _scheduleRepeating(105, 'آخر فرصة 🌙',
+          'سجّل عاداتك النهارده عشان نتيجة يومك تتحسب صح.', 21, 0);
+    } catch (e) {
+      debugPrint('NotificationService.scheduleDailyReminders error: $e');
+    }
   }
 
   // --- Schedule midnight end-of-day report ---
   static Future<void> scheduleEndOfDayReport() async {
-    await _scheduleRepeating(
-        200, 'تقرير يومك جاهز 📊', 'افتح التطبيق وشوف إنجازاتك.', 23, 30);
+    try {
+      await _scheduleRepeating(
+          200, 'تقرير يومك جاهز 📊', 'افتح التطبيق وشوف إنجازاتك.', 23, 30);
+    } catch (e) {
+      debugPrint('NotificationService.scheduleEndOfDayReport error: $e');
+    }
   }
 
   /// كل جمعة 10 الصبح: التقرير الأسبوعي من المدرب الذكي.
   static Future<void> scheduleWeeklyReport() async {
-    await _scheduleRepeating(
-      weeklyReportId,
-      'تقريرك الأسبوعي جاهز 🧠',
-      'المدرب حلّل أسبوعك وجهزلك نصايح للأسبوع الجاي.',
-      10,
-      0,
-      weekday: DateTime.friday,
-    );
+    try {
+      await _scheduleRepeating(
+        weeklyReportId,
+        'تقريرك الأسبوعي جاهز 🧠',
+        'المدرب حلّل أسبوعك وجهزلك نصايح للأسبوع الجاي.',
+        10,
+        0,
+        weekday: DateTime.friday,
+      );
+    } catch (e) {
+      debugPrint('NotificationService.scheduleWeeklyReport error: $e');
+    }
   }
 }

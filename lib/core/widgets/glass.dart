@@ -62,7 +62,10 @@ class GlassContainer extends StatelessWidget {
               : Colors.white.withValues(alpha: 0.8),
         ),
       ),
-      child: child,
+      child: Material(
+        type: MaterialType.transparency,
+        child: child,
+      ),
     );
 
     if (onTap != null) {

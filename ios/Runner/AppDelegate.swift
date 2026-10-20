@@ -24,6 +24,19 @@ import UserNotifications
 
 // MARK: - Live Activity (عداد الراحة)
 
+@available(iOS 16.1, *)
+struct RestTimerAttributes: ActivityAttributes {
+  public struct ContentState: Codable, Hashable {
+    var endsAt: Date
+    var totalSeconds: Int
+    var pausedRemaining: Int?
+    var label: String
+
+    var startedAt: Date { endsAt.addingTimeInterval(-Double(max(totalSeconds, 1))) }
+    var isPaused: Bool { pausedRemaining != nil }
+  }
+}
+
 /// القناة: habits/live_activity — بتتنادى من lib/core/services/live_activity_service.dart
 final class LiveActivityPlugin: NSObject, FlutterPlugin {
   static func register(with registrar: FlutterPluginRegistrar) {
